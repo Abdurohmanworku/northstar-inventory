@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Dashboard — Northstar Retail Co.</title>
+  <!--
+    SAVE THIS FILE as index.html in your northstar-inventory project root.
+    Run: vercel dev   →   open http://localhost:3000
+    The dashboard talks to your API at /api/stock, /api/stock/all, /api/stock/update
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #EEF2F7;
+      --surface:      #FFFFFF;
+      --border:       #D9E2EC;
+      --border-s:     #BCCCDC;
+      --navy:         #102A43;
+      --navy-2:       #1A3A57;
+      --blue:         #2563EB;
+      --blue-light:   #DBEAFE;
+      --green:        #059669;
+      --green-bg:     #ECFDF5;
+      --green-b:      #A7F3D0;
+      --red:          #DC2626;
+      --red-bg:       #FEF2F2;
+      --red-b:        #FECACA;
+      --amber:        #B45309;
+      --text:         #0F172A;
+      --text-2:       #334155;
+      --text-3:       #64748B;
+      --text-4:       #94A3B8;
+      --mono:         'JetBrains Mono', monospace;
+      --sans:         'Inter', system-ui, sans-serif;
+      --r:            8px;
+      --r-sm:         5px;
+      --shadow:       0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    .header {
+      background: var(--navy);
+      height: 58px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 30px;
+      height: 30px;
+      background: var(--blue);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -.01em;
+    }
+
+    .brand-tag {
+      font-size: 12px;
+      color: #64748B;
+      margin-left: 4px;
+      font-weight: 400;
+    }
+
+    .api-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .api-label {
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #475569;
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+
+    .dot.online  { background: var(--green); }
+    .dot.offline { background: var(--red); }
+
+    .api-input {
+      width: 230px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--r-sm);
+      padding: 5px 10px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: #CBD5E1;
+    }
+
+    .api-input:focus {
+      outline: none;
+      border-color: var(--blue);
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--r-sm);
+      border: 1px solid rgba(255,255,255,.12);
+      background: transparent;
+      color: #94A3B8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      transition: background .15s;
+      line-height: 1;
+    }
+
+    .icon-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+    /* ── Layout ───────────────────────────────────── */
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 24px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .sidebar {
+      width: 310px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    @media (max-width: 820px) {
+      .page { flex-direction: column; padding: 16px; }
+      .sidebar { width: 100%; }
+    }
+
+    /* ── Card ─────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .card-body { padding: 18px; }
+
+    /* ── Form ─────────────────────────────────────── */
+    .field { margin-bottom: 12px; }
+
+    .field:last-of-type { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-3);
+      margin-bottom: 5px;
+    }
+
+    .field input {
+      width: 100%;
+      border: 1px solid var(--border-s);
+      border-radius: var(--r-sm);
+      padding: 8px 10px;
+      font-size: 14px;
+      font-family: var(--mono);
+      color: var(--text);
+      background: var(--surface);
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-light);
+    }
+
+    /* ── Buttons ──────────────────────────────────── */
+    .btn {
+      width: 100%;
+      padding: 9px 16px;
+      border-radius: var(--r-sm);
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #1d50c4; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Result box ───────────────────────────────── */
+    .result {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+    }
+
+    .result.show { display: block; }
+    .result.ok   { background: var(--green-bg); border: 1px solid var(--green-b); }
+    .result.fail { background: var(--red-bg);   border: 1px solid var(--red-b);   }
+    .result.info { background: #EFF6FF;          border: 1px solid #BFDBFE;        }
+
+    .rname { font-weight: 600; font-size: 15px; color: var(--text); margin-bottom: 8px; }
+
+    .rrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+
+    .rlabel { color: var(--text-3); font-size: 12px; min-width: 68px; }
+    .rval   { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+    .rtime  { font-size: 11px; color: var(--text-4); }
+    .rerr   { color: var(--red); font-weight: 500; }
+
+    /* ── Badge ────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-in  { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
+    .badge-out { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-b);   }
+
+    /* SIGNATURE ELEMENT: pulsing dot on in-stock badges */
+    @keyframes pulse {
+      0%, 100% { opacity: 1;   transform: scale(1);    }
+      50%       { opacity: .45; transform: scale(.82);  }
+    }
+
+    .pdot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── Stats bar ────────────────────────────────── */
+    .stats {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat {
+      flex: 1;
+      padding: 14px 0;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-n {
+      font-size: 24px;
+      font-weight: 600;
+      font-family: var(--mono);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-n.g { color: var(--green); }
+    .stat-n.r { color: var(--red);   }
+
+    .stat-lbl {
+      font-size: 10px;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* ── Table ────────────────────────────────────── */
+    .tbl { width: 100%; border-collapse: collapse; }
+
+    .tbl th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #F8FAFC;
+    }
+
+    .tbl td {
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .tbl tr:last-child td { border-bottom: none; }
+
+    .tbl tbody tr:hover td {
+      background: #F1F5F9;
+      cursor: pointer;
+    }
+
+    .tid  { font-family: var(--mono); font-size: 12px; color: var(--text-3); font-weight: 500; }
+    .tname { font-weight: 500; font-size: 14px; color: var(--text); }
+    .tqty { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+    .tqty.zero { color: var(--text-4); }
+    .tqty.low  { color: var(--amber);  }
+    .tqty.ok   { color: var(--text);   }
+
+    /* ── States ───────────────────────────────────── */
+    .state-row td {
+      text-align: center;
+      padding: 48px;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+    }
+
+    /* ── Toast ────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--navy);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: var(--r);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .2s, transform .2s;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    .inv-head-right { display: flex; align-items: center; gap: 6px; }
+
+    .last-updated {
+      font-size: 11px;
+      color: var(--text-4);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pdot, .spinner { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="brand">
+    <div class="logo">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="5" height="5" rx="1" fill="white" opacity=".85"/>
+        <rect x="9" y="2" width="5" height="5" rx="1" fill="white" opacity=".5"/>
+        <rect x="2" y="9" width="5" height="5" rx="1" fill="white" opacity=".5"/>
+        <rect x="9" y="9" width="5" height="5" rx="1" fill="white" opacity=".85"/>
+      </svg>
+    </div>
+    <span class="brand-name">Northstar Retail Co.<span class="brand-tag">Inventory Dashboard</span></span>
+  </div>
+
+  <div class="api-bar">
+    <span class="api-label">API</span>
+    <div class="dot" id="dot"></div>
+    <input class="api-input" id="apiBase" value="http://localhost:3000" placeholder="http://localhost:3000"/>
+    <button class="icon-btn" onclick="pingApi()" title="Test connection">⟳</button>
+  </div>
+</header>
+
+<!-- Page -->
+<div class="page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- Quick stock check -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Quick stock check</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label for="checkId">Item ID</label>
+          <input id="checkId" type="text" placeholder="e.g. A001" maxlength="10"
+                 onkeydown="if(event.key==='Enter') checkStock()"/>
+        </div>
+        <button class="btn btn-primary" id="checkBtn" onclick="checkStock()">Check stock</button>
+        <div class="result" id="checkResult"></div>
+      </div>
+    </div>
+
+    <!-- Update stock -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Update quantity</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label for="updateId">Item ID</label>
+          <input id="updateId" type="text" placeholder="e.g. A002" maxlength="10"/>
+        </div>
+        <div class="field">
+          <label for="updateQty">New quantity</label>
+          <input id="updateQty" type="number" placeholder="0" min="0"
+                 onkeydown="if(event.key==='Enter') updateStock()"/>
+        </div>
+        <button class="btn btn-primary" id="updateBtn" onclick="updateStock()">Update stock</button>
+        <div class="result" id="updateResult"></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Inventory table -->
+  <div class="card" style="flex:1; min-width:0;">
+
+    <!-- Stats bar -->
+    <div class="stats">
+      <div class="stat"><div class="stat-n"    id="sTotal">—</div><div class="stat-lbl">Total items</div></div>
+      <div class="stat"><div class="stat-n g"  id="sIn">—</div><div class="stat-lbl">In stock</div></div>
+      <div class="stat"><div class="stat-n r"  id="sOut">—</div><div class="stat-lbl">Out of stock</div></div>
+    </div>
+
+    <div class="card-head">
+      <span class="card-title">All inventory</span>
+      <div class="inv-head-right">
+        <span class="last-updated" id="lastUpdated"></span>
+        <button class="icon-btn" onclick="loadInventory()" title="Refresh inventory">⟳</button>
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Item ID</th>
+          <th>Name</th>
+          <th>Qty</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="state-row"><td colspan="4"><span class="spinner"></span></td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ── Helpers ───────────────────────────────────────────────────
+  const base = () => document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  function setDot(state) {
+    const el = document.getElementById('dot');
+    el.className = 'dot' + (state === 'online' ? ' online' : state === 'offline' ? ' offline' : '');
+  }
+
+  function showResult(id, type, html) {
+    const el = document.getElementById(id);
+    el.className = 'result show ' + type;
+    el.innerHTML = html;
+  }
+
+  function qtyClass(q) {
+    if (q === 0) return 'zero';
+    if (q <= 5)  return 'low';
+    return 'ok';
+  }
+
+  function badge(inStock) {
+    return inStock
+      ? `<span class="badge badge-in"><span class="pdot"></span>In stock</span>`
+      : `<span class="badge badge-out">Out of stock</span>`;
+  }
+
+  // ── Ping API ──────────────────────────────────────────────────
+  async function pingApi() {
+    try {
+      const r = await fetch(base() + '/api/stock/all');
+      setDot(r.ok ? 'online' : 'offline');
+      if (r.ok) { toast('API reachable ✓'); loadInventory(); }
+      else toast('API returned an error.');
+    } catch {
+      setDot('offline');
+      toast('Cannot reach API — is vercel dev running?');
+    }
+  }
+
+  // ── Quick check ───────────────────────────────────────────────
+  async function checkStock() {
+    const id  = document.getElementById('checkId').value.trim().toUpperCase();
+    const btn = document.getElementById('checkBtn');
+    if (!id) { showResult('checkResult', 'fail', '<span class="rerr">Enter an item ID first.</span>'); return; }
+
+    btn.disabled = true; btn.textContent = 'Checking…';
+
+    try {
+      const r    = await fetch(base() + '/api/stock?itemId=' + id);
+      const data = await r.json();
+
+      if (!r.ok) {
+        showResult('checkResult', 'fail', `<span class="rerr">${data.error || 'Not found'}</span>`);
+      } else {
+        showResult('checkResult', 'info', `
+          <div class="rname">${data.name}</div>
+          <div class="rrow"><span class="rlabel">Item ID</span>  <span class="rval">${data.itemId}</span></div>
+          <div class="rrow"><span class="rlabel">Quantity</span> <span class="rval">${data.quantity}</span></div>
+          <div class="rrow"><span class="rlabel">Status</span>   ${badge(data.inStock)}</div>
+          <div class="rrow"><span class="rlabel">Checked</span>  <span class="rtime">${new Date(data.checkedAt).toLocaleTimeString()}</span></div>
+        `);
+      }
+    } catch {
+      showResult('checkResult', 'fail', '<span class="rerr">Cannot reach API.</span>');
+    }
+
+    btn.disabled = false; btn.textContent = 'Check stock';
+  }
+
+  // ── Update stock ──────────────────────────────────────────────
+  async function updateStock() {
+    const id   = document.getElementById('updateId').value.trim().toUpperCase();
+    const qRaw = document.getElementById('updateQty').value.trim();
+    const btn  = document.getElementById('updateBtn');
+
+    if (!id || qRaw === '') {
+      showResult('updateResult', 'fail', '<span class="rerr">Fill in both fields.</span>');
+      return;
+    }
+
+    const qty = Number(qRaw);
+    if (isNaN(qty) || qty < 0) {
+      showResult('updateResult', 'fail', '<span class="rerr">Quantity must be 0 or more.</span>');
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Updating…';
+
+    try {
+      const r    = await fetch(base() + '/api/stock/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: id, quantity: qty }),
+      });
+      const data = await r.json();
+
+      if (!r.ok) {
+        showResult('updateResult', 'fail', `<span class="rerr">${data.error || 'Update failed'}</span>`);
+      } else {
+        showResult('updateResult', 'ok', `
+          <div class="rname">${data.updated.name}</div>
+          <div class="rrow"><span class="rlabel">New qty</span>  <span class="rval">${data.updated.quantity}</span></div>
+          <div class="rrow"><span class="rlabel">In stock</span> ${badge(data.updated.inStock)}</div>
+        `);
+        toast('Updated — refreshing inventory…');
+        setTimeout(loadInventory, 500);
+      }
+    } catch {
+      showResult('updateResult', 'fail', '<span class="rerr">Cannot reach API.</span>');
+    }
+
+    btn.disabled = false; btn.textContent = 'Update stock';
+  }
+
+  // ── Load all inventory ────────────────────────────────────────
+  async function loadInventory() {
+    document.getElementById('tbody').innerHTML =
+      '<tr class="state-row"><td colspan="4"><span class="spinner"></span></td></tr>';
+
+    try {
+      const r    = await fetch(base() + '/api/stock/all');
+      const data = await r.json();
+
+      if (!r.ok) {
+        document.getElementById('tbody').innerHTML =
+          `<tr class="state-row"><td colspan="4" style="color:var(--red)">Failed to load inventory.</td></tr>`;
+        setDot('offline');
+        return;
+      }
+
+      setDot('online');
+      document.getElementById('sTotal').textContent = data.totalItems;
+      document.getElementById('sIn').textContent    = data.inStockCount;
+      document.getElementById('sOut').textContent   = data.outOfStock;
+      document.getElementById('lastUpdated').textContent =
+        'Updated ' + new Date().toLocaleTimeString();
+
+      if (!data.items.length) {
+        document.getElementById('tbody').innerHTML =
+          '<tr class="state-row"><td colspan="4">No items in inventory.</td></tr>';
+        return;
+      }
+
+      document.getElementById('tbody').innerHTML = data.items.map(item => `
+        <tr onclick="prefill('${item.itemId}')" title="Click to select for update">
+          <td><span class="tid">${item.itemId}</span></td>
+          <td><span class="tname">${item.name}</span></td>
+          <td><span class="tqty ${qtyClass(item.quantity)}">${item.quantity}</span></td>
+          <td>${badge(item.inStock)}</td>
+        </tr>
+      `).join('');
+
+    } catch {
+      document.getElementById('tbody').innerHTML =
+        `<tr class="state-row"><td colspan="4" style="color:var(--red)">
+          Cannot reach API — is <code>vercel dev</code> running?
+        </td></tr>`;
+      setDot('offline');
+    }
+  }
+
+  function prefill(id) {
+    document.getElementById('updateId').value = id;
+    document.getElementById('updateQty').focus();
+    toast('Row selected — enter new quantity');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  loadInventory();
+</script>
+</body>
+</html>

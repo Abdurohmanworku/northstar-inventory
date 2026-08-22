@@ -1,0 +1,11 @@
+{
+  "name": "northstar-inventory",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3"
+  }
+}
