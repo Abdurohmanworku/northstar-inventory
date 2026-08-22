@@ -1,4 +1,5 @@
-// api/stock/update.js  →  POST /api/stock/update
+if (error || !data)
+  return res.status(404).json({ error: `Item '${itemId}' not found` });// api/stock/update.js  →  POST /api/stock/update
 import supabase from "../../lib/supabase.js";
 
 export default async function handler(req, res) {
