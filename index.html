@@ -445,7 +445,7 @@
   <div class="api-bar">
     <span class="api-label">API</span>
     <div class="dot" id="dot"></div>
-    <input class="api-input" id="apiBase" value="http://localhost:3000" placeholder="http://localhost:3000"/>
+    <input class="api-input" id="apiBase" value="" placeholder="http://localhost:3000"/>
     <button class="icon-btn" onclick="pingApi()" title="Test connection">⟳</button>
   </div>
 </header>
@@ -534,8 +534,11 @@
 
 <script>
   // ── Helpers ───────────────────────────────────────────────────
-  const base = () => document.getElementById('apiBase').value.trim().replace(/\/$/, '');
-
+ // const base = () => document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+const base = () => {
+  const configured = document.getElementById('apiBase').value.trim();
+  return (configured || window.location.origin).replace(/\/$/, '');
+};
   let toastTimer;
   function toast(msg) {
     const el = document.getElementById('toast');
